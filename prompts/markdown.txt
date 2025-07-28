@@ -1,0 +1,11 @@
+Write a ~{char_target} character (~±10%) mystery script for YouTube narration.
+
+Requirements:
+- Hook in the first 2–3 sentences.
+- Immersive, descriptive, present-tense feel.
+- Light skepticism but never fully debunk; preserve the eerie tone.
+- Structure: Hook → setup/context → escalation of weird facts → competing theories → unresolved lingering question(s) → haunting outro line.
+- No references to other videos or other topics.
+- No CTA.
+
+Topic: {topic}

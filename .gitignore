@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Secrets
+.env
+
+# Audio output
+drafts/
+approved/
+audio_parts/
+output/
