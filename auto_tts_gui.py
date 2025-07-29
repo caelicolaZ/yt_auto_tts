@@ -3,7 +3,11 @@ import re
 import uuid
 import subprocess
 import tkinter as tk
+from io import BytesIO
 from tkinter import simpledialog, messagebox, scrolledtext
+
+import requests
+from PIL import Image, ImageTk
 
 from auto_tts import (
     generate_script,
@@ -11,6 +15,9 @@ from auto_tts import (
     tts_chunk,
     merge_parts,
     calc_target_per_topic,
+    search_wikimedia_images,
+    slugify,
+    IMAGES_DIR,
 )
 
 
@@ -58,6 +65,60 @@ def confirm_audio(path: str) -> bool:
     return res
 
 
+def select_images(topic: str, limit: int = 5):
+    """Show Wikimedia images for *topic* and let the user choose which to keep."""
+    images = search_wikimedia_images(topic, limit=limit)
+    if not images:
+        return []
+
+    dest = IMAGES_DIR / slugify(topic)
+    dest.mkdir(parents=True, exist_ok=True)
+    saved = []
+
+    for idx, img in enumerate(images, 1):
+        try:
+            r = requests.get(img["url"], timeout=15)
+            r.raise_for_status()
+        except Exception:
+            print(f"Failed to download {img['url']}")
+            continue
+
+        keep = False
+
+        def accept():
+            nonlocal keep
+            keep = True
+            win.destroy()
+
+        def skip():
+            win.destroy()
+
+        win = tk.Tk()
+        win.title(f"{topic} ({idx}/{len(images)})")
+        bio = BytesIO(r.content)
+        pil_img = Image.open(bio)
+        pil_img.thumbnail((500, 500))
+        tk_img = ImageTk.PhotoImage(pil_img)
+        lbl = tk.Label(win, image=tk_img)
+        lbl.image = tk_img
+        lbl.pack()
+        tk.Label(win, text=f"{img['title']}\nLicense: {img['license']}").pack()
+        btn_frame = tk.Frame(win)
+        btn_frame.pack()
+        tk.Button(btn_frame, text="Keep", command=accept).pack(side=tk.LEFT)
+        tk.Button(btn_frame, text="Skip", command=skip).pack(side=tk.LEFT)
+        win.mainloop()
+
+        if keep:
+            ext = os.path.splitext(img["url"].split("?")[0])[1]
+            out_path = dest / f"{idx:02d}{ext}"
+            with open(out_path, "wb") as f:
+                f.write(r.content)
+            saved.append(out_path)
+
+    return saved
+
+
 def main():
     topics = ask_topics()
     if not topics:
@@ -75,6 +136,10 @@ def main():
         if not show_text(text):
             print("Script not approved. Exiting.")
             return
+
+        chosen = select_images(topic)
+        if chosen:
+            print(f"Saved {len(chosen)} image(s) for {topic}")
 
         blocks = split_text_blocks(text)
         part_files = []
