@@ -66,3 +66,14 @@ parts are merged into a single mp3 under `output/`.
 
 Run `python auto_tts.py -h` to see all available options.
 
+
+## GUI Usage
+
+A basic Tkinter interface is available in `auto_tts_gui.py`. Run the script
+and enter one or more topics when prompted. For each topic a draft is
+presented for approval, followed by the generated audio. Once all segments are
+approved a final mp3 is created combining all pieces.
+
+```bash
+python auto_tts_gui.py
+```
