@@ -17,8 +17,9 @@ DRAFT_DIR    = BASE_DIR / "drafts"
 APPROVED_DIR = BASE_DIR / "approved"
 PARTS_DIR    = BASE_DIR / "audio_parts"
 OUT_DIR      = BASE_DIR / "output"
+IMAGES_DIR   = BASE_DIR / "images"
 
-for p in (DRAFT_DIR, APPROVED_DIR, PARTS_DIR, OUT_DIR):
+for p in (DRAFT_DIR, APPROVED_DIR, PARTS_DIR, OUT_DIR, IMAGES_DIR):
     p.mkdir(exist_ok=True)
 
 # ------------------ ENV laden ------------------
@@ -60,6 +61,10 @@ def save_text(path: Path, text: str):
 
 def count_chars(text: str) -> int:
     return len(text)
+
+def slugify(value: str) -> str:
+    """Return a filesystem-friendly version of *value*"""
+    return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
 def load_topics(value: str) -> List[str]:
     """Return a list of topics from file or comma-separated string"""

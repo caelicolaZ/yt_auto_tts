@@ -86,7 +86,10 @@ Use this to collect illustrative material for each script segment.
 
 A basic Tkinter interface is available in `auto_tts_gui.py`. Run the script
 and enter one or more topics when prompted. For each topic a draft is
-presented for approval, followed by the generated audio. Once all segments are
+presented for approval. After approving the text you can review a few freely
+licensed images from Wikimedia Commons in a small dialog and decide which ones
+to save. Selected images are downloaded under `images/<topic>/`. Next, the
+audio for that topic is generated and must be approved. Once all segments are
 approved a final mp3 is created combining all pieces.
 
 ```bash
