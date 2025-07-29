@@ -66,6 +66,21 @@ parts are merged into a single mp3 under `output/`.
 
 Run `python auto_tts.py -h` to see all available options.
 
+## Searching for images
+
+The helper function `search_wikimedia_images()` can fetch freely licensed
+images from Wikimedia Commons for a given topic.
+
+```python
+from auto_tts import search_wikimedia_images
+
+images = search_wikimedia_images("Sea Bishop", limit=2)
+for img in images:
+    print(img["url"])
+```
+
+Use this to collect illustrative material for each script segment.
+
 
 ## GUI Usage
 
