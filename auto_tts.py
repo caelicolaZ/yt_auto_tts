@@ -88,6 +88,44 @@ def split_text_blocks(text: str, max_chars: int = 2500):
         blocks.append(current.strip())
     return blocks
 
+def search_wikimedia_images(query: str, limit: int = 3) -> List[dict]:
+    """Search Wikimedia Commons for freely licensed images related to *query*.
+
+    Returns a list of dictionaries with ``title``, ``url`` and ``license``.
+    """
+    api = "https://commons.wikimedia.org/w/api.php"
+    params = {
+        "action": "query",
+        "format": "json",
+        "generator": "search",
+        "gsrsearch": query,
+        "gsrlimit": limit,
+        "gsrnamespace": 6,  # file namespace
+        "prop": "imageinfo",
+        "iiprop": "url|extmetadata",
+    }
+
+    r = requests.get(api, params=params, timeout=15)
+    r.raise_for_status()
+    data = r.json()
+
+    results = []
+    for page in data.get("query", {}).get("pages", {}).values():
+        info = page.get("imageinfo", [{}])[0]
+        url = info.get("url")
+        license = (
+            info.get("extmetadata", {})
+            .get("LicenseShortName", {})
+            .get("value")
+        )
+        if url:
+            results.append({
+                "title": page.get("title"),
+                "url": url,
+                "license": license,
+            })
+    return results
+
 def tts_chunk(text: str, idx: int, basename: str) -> Path:
     """ Ein Block Text -> MP3 via ElevenLabs """
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}/stream"
