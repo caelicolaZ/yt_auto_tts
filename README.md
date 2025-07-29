@@ -53,5 +53,16 @@ This copies the file to `approved/`, splits the text into chunks and calls
 the ElevenLabs API to generate individual audio files. Finally all parts are
 merged into a single mp3 placed in the `output/` directory.
 
+### Process multiple topics
+
+```bash
+python auto_tts.py --topics topics.txt [--basename NAME]
+```
+
+`topics.txt` must contain one topic per line. You can also provide a
+comma-separated list directly. For each topic the script generates a segment so
+that the total length is roughly one hour of narration. All generated audio
+parts are merged into a single mp3 under `output/`.
+
 Run `python auto_tts.py -h` to see all available options.
 
