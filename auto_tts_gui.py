@@ -76,11 +76,22 @@ def select_images(topic: str, limit: int = 5):
     saved = []
 
     for idx, img in enumerate(images, 1):
-        try:
-            r = requests.get(img["url"], timeout=15)
-            r.raise_for_status()
-        except Exception:
-            print(f"Failed to download {img['url']}")
+        r = None
+        while True:
+            try:
+                r = requests.get(img["url"], timeout=15)
+                r.raise_for_status()
+                break
+            except requests.RequestException as e:
+                print(f"Failed to download {img['url']}: {e}")
+                choice = input("Retry download? [y/N]: ").strip().lower()
+                if choice == "y":
+                    continue
+                break
+            except Exception as e:
+                print(f"Unexpected error downloading {img['url']}: {e}")
+                break
+        if r is None:
             continue
 
         keep = False

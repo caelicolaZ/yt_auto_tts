@@ -110,8 +110,12 @@ def search_wikimedia_images(query: str, limit: int = 3) -> List[dict]:
         "iiprop": "url|extmetadata",
     }
 
-    r = requests.get(api, params=params, timeout=15)
-    r.raise_for_status()
+    try:
+        r = requests.get(api, params=params, timeout=15)
+        r.raise_for_status()
+    except requests.RequestException as e:
+        print(f"❌ Wikimedia request failed: {e}")
+        return []
     data = r.json()
 
     results = []
@@ -140,12 +144,14 @@ def tts_chunk(text: str, idx: int, basename: str) -> Path:
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {"stability": 0.45, "similarity_boost": 0.8, "speed": 1.0}
     }
-    r = requests.post(url, headers=headers, json=payload, timeout=180)
     try:
+        r = requests.post(url, headers=headers, json=payload, timeout=180)
         r.raise_for_status()
-    except Exception:
+    except requests.RequestException as e:
         print("❌ ElevenLabs Fehlerantwort:")
-        print(r.text[:500])
+        if 'r' in locals():
+            print(r.text[:500])
+        print(e)
         raise
 
     fn = PARTS_DIR / f"{basename}_{idx:02d}.mp3"
