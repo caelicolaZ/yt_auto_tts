@@ -2,6 +2,7 @@ import os
 import re
 import uuid
 from pathlib import Path
+from typing import List
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -27,6 +28,9 @@ OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 ELEVEN_KEY = os.getenv("ELEVEN_API_KEY")
 VOICE_ID   = os.getenv("ELEVEN_VOICE_ID", "IrMGt4vHCJZmo2JER29o")
 GPT_MODEL  = os.getenv("GPT_MODEL", "gpt-4o")
+
+# average characters spoken per minute; used for multi-topic mode
+CHARS_PER_MIN = 700
 
 if not OPENAI_KEY or not ELEVEN_KEY:
     raise SystemExit("❌ OPENAI_API_KEY oder ELEVEN_API_KEY fehlt in .env")
@@ -56,6 +60,18 @@ def save_text(path: Path, text: str):
 
 def count_chars(text: str) -> int:
     return len(text)
+
+def load_topics(value: str) -> List[str]:
+    """Return a list of topics from file or comma-separated string"""
+    path = Path(value)
+    if path.exists():
+        lines = path.read_text(encoding="utf-8").splitlines()
+        return [l.strip() for l in lines if l.strip()]
+    return [t.strip() for t in value.split(",") if t.strip()]
+
+def calc_target_per_topic(n: int, chars_per_min: int = CHARS_PER_MIN, minutes: int = 60) -> int:
+    total = chars_per_min * minutes
+    return max(1, total // n)
 
 def split_text_blocks(text: str, max_chars: int = 2500):
     """ Teilt Text an Absatzgrenzen, damit ElevenLabs-Limits nicht reißen """
@@ -111,6 +127,8 @@ def main():
     ap.add_argument("--generate", action="store_true",
                     help="Neuen Draft erzeugen")
     ap.add_argument("--topic", help="Thema für das Skript (bei --generate)")
+    ap.add_argument("--topics",
+                    help="Datei oder kommagetrennte Liste mehrerer Topics")
     ap.add_argument("--chars", type=int, default=7000,
                     help="Zielzeichenanzahl (10 -+)")
     ap.add_argument("--max_chunk", type=int, default=2500,
@@ -121,6 +139,29 @@ def main():
                     help="Basisname für Audio-Dateien")
 
     args = ap.parse_args()
+
+    if args.topics:
+        topics = load_topics(args.topics)
+        if not topics:
+            ap.error("Keine Topics gefunden")
+
+        basename = args.basename or f"combined_{uuid.uuid4().hex[:8]}"
+        char_target = calc_target_per_topic(len(topics))
+
+        mp3_files = []
+        idx = 0
+        for topic in topics:
+            print(f"📝 Generiere Skript: {topic}")
+            text = generate_script(topic, char_target)
+            blocks = split_text_blocks(text, max_chars=args.max_chunk)
+            for block in blocks:
+                idx += 1
+                print(f"TTS {idx} …")
+                mp3_files.append(tts_chunk(block, idx, basename))
+
+        final_file = merge_parts(mp3_files, basename)
+        print("🎧 Fertig:", final_file)
+        return
 
     if args.generate:
         if not args.topic:
