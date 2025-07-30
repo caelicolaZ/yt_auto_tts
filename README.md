@@ -95,3 +95,11 @@ approved a final mp3 is created combining all pieces.
 ```bash
 python auto_tts_gui.py
 ```
+
+To test just the image search and approval workflow without running the
+full pipeline, use the `--test-images` option. Provide a topic with
+`--topic` (defaults to "Sperm Whale vs Colossal Squid"):
+
+```bash
+python auto_tts_gui.py --test-images --topic "Sea Bishop"
+```

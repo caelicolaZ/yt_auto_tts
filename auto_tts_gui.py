@@ -172,4 +172,23 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Run the GUI workflow")
+    ap.add_argument(
+        "--test-images",
+        action="store_true",
+        help="Only run image approval for --topic and exit",
+    )
+    ap.add_argument(
+        "--topic",
+        default="Sperm Whale vs Colossal Squid",
+        help="Topic to search images for in --test-images mode",
+    )
+    args = ap.parse_args()
+
+    if args.test_images:
+        chosen = select_images(args.topic)
+        print(f"Saved {len(chosen)} image(s)")
+    else:
+        main()
