@@ -18,6 +18,7 @@ from auto_tts import (
     search_wikimedia_images,
     slugify,
     IMAGES_DIR,
+    USER_AGENT,
 )
 
 
@@ -77,9 +78,10 @@ def select_images(topic: str, limit: int = 5):
 
     for idx, img in enumerate(images, 1):
         r = None
+        headers = {"User-Agent": USER_AGENT}
         while True:
             try:
-                r = requests.get(img["url"], timeout=15)
+                r = requests.get(img["url"], headers=headers, timeout=15)
                 r.raise_for_status()
                 break
             except requests.RequestException as e:
@@ -107,7 +109,12 @@ def select_images(topic: str, limit: int = 5):
         win = tk.Tk()
         win.title(f"{topic} ({idx}/{len(images)})")
         bio = BytesIO(r.content)
-        pil_img = Image.open(bio)
+        try:
+            pil_img = Image.open(bio)
+        except Exception:
+            print(f"Skipping invalid image: {img['url']}")
+            win.destroy()
+            continue
         pil_img.thumbnail((500, 500))
         tk_img = ImageTk.PhotoImage(pil_img)
         lbl = tk.Label(win, image=tk_img)

@@ -32,6 +32,7 @@ GPT_MODEL  = os.getenv("GPT_MODEL", "gpt-4o")
 
 # average characters spoken per minute; used for multi-topic mode
 CHARS_PER_MIN = 700
+USER_AGENT = os.getenv("USER_AGENT", "yt_auto_tts/1.0 (+https://example.com)")
 
 if not OPENAI_KEY or not ELEVEN_KEY:
     raise SystemExit("❌ OPENAI_API_KEY oder ELEVEN_API_KEY fehlt in .env")
@@ -110,8 +111,9 @@ def search_wikimedia_images(query: str, limit: int = 3) -> List[dict]:
         "iiprop": "url|extmetadata",
     }
 
+    headers = {"User-Agent": USER_AGENT}
     try:
-        r = requests.get(api, params=params, timeout=15)
+        r = requests.get(api, params=params, headers=headers, timeout=15)
         r.raise_for_status()
     except requests.RequestException as e:
         print(f"❌ Wikimedia request failed: {e}")

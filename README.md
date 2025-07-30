@@ -103,3 +103,16 @@ full pipeline, use the `--test-images` option. Provide a topic with
 ```bash
 python auto_tts_gui.py --test-images --topic "Sea Bishop"
 ```
+
+### Wikimedia User-Agent
+
+Wikimedia requires a descriptive `User-Agent` header for API and file requests.
+Set the environment variable `USER_AGENT` to something that identifies your
+application, for example:
+
+```bash
+export USER_AGENT="yt_auto_tts/1.0 (contact: you@example.com)"
+```
+
+The helper functions automatically include this header when querying and
+downloading images.
