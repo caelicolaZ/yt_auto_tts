@@ -1,6 +1,7 @@
 import os
 import re
 import uuid
+import shutil
 from pathlib import Path
 from typing import List
 
@@ -18,8 +19,9 @@ APPROVED_DIR = BASE_DIR / "approved"
 PARTS_DIR    = BASE_DIR / "audio_parts"
 OUT_DIR      = BASE_DIR / "output"
 IMAGES_DIR   = BASE_DIR / "images"
+PROJECTS_DIR = BASE_DIR / "projects"
 
-for p in (DRAFT_DIR, APPROVED_DIR, PARTS_DIR, OUT_DIR, IMAGES_DIR):
+for p in (DRAFT_DIR, APPROVED_DIR, PARTS_DIR, OUT_DIR, IMAGES_DIR, PROJECTS_DIR):
     p.mkdir(exist_ok=True)
 
 # ------------------ ENV laden ------------------
@@ -180,13 +182,17 @@ def tts_chunk(text: str, idx: int, basename: str) -> Path:
         f.write(r.content)
     return fn
 
-def merge_parts(files, out_name: str) -> Path:
+def merge_parts(files, out_name: str, dest_dir: Path | None = None) -> Path:
     """ Schnipsel zusammenfügen -> finale MP3 """
+    if dest_dir is None:
+        dest_dir = OUT_DIR
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
     combined = AudioSegment.empty()
     pause = AudioSegment.silent(duration=350)  # 0,35s Pause
     for f in files:
         combined += AudioSegment.from_file(f) + pause
-    out_path = OUT_DIR / f"{out_name}.mp3"
+    out_path = dest_dir / f"{out_name}.mp3"
     combined.export(out_path, format="mp3")
     return out_path
 
@@ -218,18 +224,28 @@ def main():
         basename = args.basename or f"combined_{uuid.uuid4().hex[:8]}"
         char_target = calc_target_per_topic(len(topics))
 
+        project_dir = PROJECTS_DIR / slugify(basename)
+        project_dir.mkdir(parents=True, exist_ok=True)
+
         mp3_files = []
         idx = 0
         for topic in topics:
             print(f"📝 Generiere Skript: {topic}")
             text = generate_script(topic, char_target)
+            save_text(project_dir / f"{slugify(topic)}.md", text)
+
+            images_src = IMAGES_DIR / slugify(topic)
+            if images_src.exists():
+                dest = project_dir / "images" / slugify(topic)
+                shutil.copytree(images_src, dest, dirs_exist_ok=True)
+
             blocks = split_text_blocks(text, max_chars=args.max_chunk)
             for block in blocks:
                 idx += 1
                 print(f"TTS {idx} …")
                 mp3_files.append(tts_chunk(block, idx, basename))
 
-        final_file = merge_parts(mp3_files, basename)
+        final_file = merge_parts(mp3_files, slugify(basename), dest_dir=project_dir)
         print("🎧 Fertig:", final_file)
         return
 
@@ -260,6 +276,17 @@ def main():
         print(f"✅ Approved gespeichert: {approved_path}")
 
         basename = args.basename or approved_path.stem
+        topic_slug = basename.split("_", 1)[1] if "_" in basename else basename
+
+        project_dir = PROJECTS_DIR / slugify(topic_slug)
+        project_dir.mkdir(parents=True, exist_ok=True)
+
+        save_text(project_dir / f"{topic_slug}.md", text)
+
+        images_src = IMAGES_DIR / slugify(topic_slug)
+        if images_src.exists():
+            dest = project_dir / "images"
+            shutil.copytree(images_src, dest, dirs_exist_ok=True)
 
         blocks = split_text_blocks(text, max_chars=args.max_chunk)
         print(f"Chunks: {len(blocks)}")
@@ -267,9 +294,9 @@ def main():
         mp3_files = []
         for i, block in enumerate(blocks):
             print(f"TTS {i+1}/{len(blocks)} …")
-            mp3_files.append(tts_chunk(block, i, basename))
+            mp3_files.append(tts_chunk(block, i, topic_slug))
 
-        final_file = merge_parts(mp3_files, basename)
+        final_file = merge_parts(mp3_files, topic_slug, dest_dir=project_dir)
         print("🎧 Fertig:", final_file)
         return
 
