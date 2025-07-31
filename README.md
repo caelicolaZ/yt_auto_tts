@@ -69,12 +69,13 @@ Run `python auto_tts.py -h` to see all available options.
 ## Searching for images
 
 The helper function `search_wikimedia_images()` can fetch freely licensed
-images from Wikimedia Commons for a given topic.
+images from Wikimedia Commons. You can provide a single search term or a list
+of alternative queries.
 
 ```python
 from auto_tts import search_wikimedia_images
 
-images = search_wikimedia_images("Sea Bishop", limit=2)
+images = search_wikimedia_images(["Sea Bishop", "sea monster"], limit=2)
 for img in images:
     print(img["url"])
 ```

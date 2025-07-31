@@ -3,4 +3,5 @@ openai
 requests
 pydub
 Pillow
+nltk
 
