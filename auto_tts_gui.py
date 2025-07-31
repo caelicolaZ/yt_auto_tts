@@ -66,9 +66,35 @@ def confirm_audio(path: str) -> bool:
     return res
 
 
-def select_images(topic: str, limit: int = 5):
+def _collect_synonyms(phrase: str, max_terms: int = 5) -> list:
+    """Return a list of simple synonyms for words in *phrase* using WordNet."""
+    try:
+        from nltk.corpus import wordnet as wn
+    except Exception as e:
+        print(f"Synonym lookup failed: {e}")
+        return []
+
+    terms = set()
+    for token in re.findall(r"[A-Za-z]+", phrase):
+        for syn in wn.synsets(token):
+            for lemma in syn.lemmas():
+                name = lemma.name().replace("_", " ")
+                if name.lower() != token.lower():
+                    terms.add(name)
+                if len(terms) >= max_terms:
+                    break
+            if len(terms) >= max_terms:
+                break
+        if len(terms) >= max_terms:
+            break
+    return list(terms)[:max_terms]
+
+
+def select_images(topic: str, limit: int = 20):
     """Show Wikimedia images for *topic* and let the user choose which to keep."""
-    images = search_wikimedia_images(topic, limit=limit)
+    queries = [topic] + _collect_synonyms(topic)
+    images = search_wikimedia_images(queries, limit=limit)
+    print(f"Found {len(images)} image(s) for {topic}")
     if not images:
         return []
 

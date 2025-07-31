@@ -94,47 +94,66 @@ def split_text_blocks(text: str, max_chars: int = 2500):
         blocks.append(current.strip())
     return blocks
 
-def search_wikimedia_images(query: str, limit: int = 3) -> List[dict]:
-    """Search Wikimedia Commons for freely licensed images related to *query*.
+def search_wikimedia_images(query, limit: int = 3) -> List[dict]:
+    """Search Wikimedia Commons for freely licensed images.
 
-    Returns a list of dictionaries with ``title``, ``url`` and ``license``.
+    ``query`` may be a single string or a list of strings. The API will be
+    queried sequentially until at least ``limit`` unique images are collected
+    or all queries are exhausted. A list of dictionaries with ``title``, ``url``
+    and ``license`` is returned.
     """
+    if isinstance(query, str):
+        queries = [query]
+    else:
+        queries = list(query)
+
     api = "https://commons.wikimedia.org/w/api.php"
-    params = {
-        "action": "query",
-        "format": "json",
-        "generator": "search",
-        "gsrsearch": query,
-        "gsrlimit": limit,
-        "gsrnamespace": 6,  # file namespace
-        "prop": "imageinfo",
-        "iiprop": "url|extmetadata",
-    }
-
     headers = {"User-Agent": USER_AGENT}
-    try:
-        r = requests.get(api, params=params, headers=headers, timeout=15)
-        r.raise_for_status()
-    except requests.RequestException as e:
-        print(f"❌ Wikimedia request failed: {e}")
-        return []
-    data = r.json()
 
-    results = []
-    for page in data.get("query", {}).get("pages", {}).values():
-        info = page.get("imageinfo", [{}])[0]
-        url = info.get("url")
-        license = (
-            info.get("extmetadata", {})
-            .get("LicenseShortName", {})
-            .get("value")
-        )
-        if url:
+    results: List[dict] = []
+    seen = set()
+
+    for q in queries:
+        if len(results) >= limit:
+            break
+        params = {
+            "action": "query",
+            "format": "json",
+            "generator": "search",
+            "gsrsearch": q,
+            "gsrlimit": limit - len(results),
+            "gsrnamespace": 6,
+            "prop": "imageinfo",
+            "iiprop": "url|extmetadata",
+        }
+
+        try:
+            r = requests.get(api, params=params, headers=headers, timeout=15)
+            r.raise_for_status()
+        except requests.RequestException as e:
+            print(f"❌ Wikimedia request failed for '{q}': {e}")
+            continue
+        data = r.json()
+
+        for page in data.get("query", {}).get("pages", {}).values():
+            info = page.get("imageinfo", [{}])[0]
+            url = info.get("url")
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            license = (
+                info.get("extmetadata", {})
+                .get("LicenseShortName", {})
+                .get("value")
+            )
             results.append({
                 "title": page.get("title"),
                 "url": url,
                 "license": license,
             })
+            if len(results) >= limit:
+                break
+
     return results
 
 def tts_chunk(text: str, idx: int, basename: str) -> Path:
