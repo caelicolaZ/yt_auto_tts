@@ -12,6 +12,7 @@ Now write a ~{char_target} character script (±10%) on the following topic:
 Requirements:
 - Hook the viewer in the first 2–3 sentences
 - Use present tense and vivid, sensory descriptions
+- Keep the language simple and direct; avoid fancy or overly complex words
 - Build mystery by layering facts, witness accounts, and theories
 - Preserve ambiguity — do not debunk or explain everything
 - Conclude with a haunting or unresolved thought
