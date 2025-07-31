@@ -50,8 +50,9 @@ python auto_tts.py --approve <draft_file> [--basename NAME] [--max_chunk 2500]
 ```
 
 This copies the file to `approved/`, splits the text into chunks and calls
-the ElevenLabs API to generate individual audio files. Finally all parts are
-merged into a single mp3 placed in the `output/` directory.
+the ElevenLabs API to generate individual audio files. The final mp3 and the
+approved script are collected in `projects/<topic>/`. If you downloaded images
+for that topic under `images/<topic>/` they are copied into the same folder.
 
 ### Process multiple topics
 
@@ -61,8 +62,9 @@ python auto_tts.py --topics topics.txt [--basename NAME]
 
 `topics.txt` must contain one topic per line. You can also provide a
 comma-separated list directly. For each topic the script generates a segment so
-that the total length is roughly one hour of narration. All generated audio
-parts are merged into a single mp3 under `output/`.
+that the total length is roughly one hour of narration. All generated materials
+are stored in `projects/<basename>/` where `<basename>` defaults to a random
+identifier unless you pass `--basename`.
 
 Run `python auto_tts.py -h` to see all available options.
 

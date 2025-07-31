@@ -2,6 +2,7 @@ import os
 import re
 import uuid
 import subprocess
+import shutil
 import tkinter as tk
 from io import BytesIO
 from tkinter import simpledialog, messagebox, scrolledtext
@@ -19,6 +20,8 @@ from auto_tts import (
     slugify,
     IMAGES_DIR,
     USER_AGENT,
+    PROJECTS_DIR,
+    save_text,
 )
 
 
@@ -172,6 +175,9 @@ def main():
     basename = f"gui_{uuid.uuid4().hex[:8]}"
     char_target = calc_target_per_topic(len(topics))
 
+    project_dir = PROJECTS_DIR / basename
+    project_dir.mkdir(parents=True, exist_ok=True)
+
     mp3_files = []
     for idx, topic in enumerate(topics, 1):
         print(f"\n📝 Generating script for: {topic}")
@@ -181,23 +187,29 @@ def main():
             print("Script not approved. Exiting.")
             return
 
+        save_text(project_dir / f"{slugify(topic)}.md", text)
+
         chosen = select_images(topic)
         if chosen:
             print(f"Saved {len(chosen)} image(s) for {topic}")
+            images_src = IMAGES_DIR / slugify(topic)
+            if images_src.exists():
+                dest = project_dir / "images" / slugify(topic)
+                shutil.copytree(images_src, dest, dirs_exist_ok=True)
 
         blocks = split_text_blocks(text)
         part_files = []
         for i, block in enumerate(blocks):
             print(f"TTS {i+1}/{len(blocks)} …")
             part_files.append(tts_chunk(block, i, f"{basename}_{idx}"))
-        topic_mp3 = merge_parts(part_files, f"{basename}_{idx}")
+        topic_mp3 = merge_parts(part_files, f"{basename}_{idx}", dest_dir=project_dir)
 
         if not confirm_audio(str(topic_mp3)):
             print("Audio not approved. Exiting.")
             return
         mp3_files.append(topic_mp3)
 
-    final = merge_parts(mp3_files, basename)
+    final = merge_parts(mp3_files, basename, dest_dir=project_dir)
     root = tk.Tk()
     root.withdraw()
     messagebox.showinfo("Done", f"Final audio saved to {final}")
