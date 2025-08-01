@@ -84,6 +84,11 @@ for img in images:
 
 Use this to collect illustrative material for each script segment.
 
+If you provide an ``UNSPLASH_ACCESS_KEY`` in your environment you can also
+use ``search_unsplash_images()``. The convenience helper ``search_images_for_script()``
+creates simple search queries from a script and combines results from both
+sources so you can easily fill an entire story with background images.
+
 
 ## GUI Usage
 

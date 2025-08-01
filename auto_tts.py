@@ -158,6 +158,82 @@ def search_wikimedia_images(query, limit: int = 3) -> List[dict]:
 
     return results
 
+
+def search_unsplash_images(query, limit: int = 3) -> List[dict]:
+    """Search Unsplash for images if an access key is provided.
+
+    The environment variable ``UNSPLASH_ACCESS_KEY`` must be set. A list of
+    dictionaries with ``title``, ``url`` and ``license`` is returned. If no
+    key is available or a request fails, an empty list is returned.
+    """
+    access_key = os.getenv("UNSPLASH_ACCESS_KEY")
+    if not access_key:
+        return []
+
+    if isinstance(query, str):
+        queries = [query]
+    else:
+        queries = list(query)
+
+    headers = {"User-Agent": USER_AGENT, "Authorization": f"Client-ID {access_key}"}
+    api = "https://api.unsplash.com/search/photos"
+
+    results: List[dict] = []
+    seen = set()
+
+    for q in queries:
+        if len(results) >= limit:
+            break
+        params = {"query": q, "per_page": limit - len(results)}
+        try:
+            r = requests.get(api, params=params, headers=headers, timeout=15)
+            r.raise_for_status()
+        except requests.RequestException as e:
+            print(f"❌ Unsplash request failed for '{q}': {e}")
+            continue
+        data = r.json()
+        for item in data.get("results", []):
+            url = item.get("urls", {}).get("regular")
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            results.append({
+                "title": item.get("description") or item.get("alt_description"),
+                "url": url,
+                "license": "Unsplash License",
+            })
+            if len(results) >= limit:
+                break
+
+    return results
+
+
+def extract_image_queries(text: str) -> List[str]:
+    """Return one search query per paragraph of ``text``."""
+    queries = []
+    for para in re.split(r"\n\s*\n", text):
+        words = re.findall(r"[A-Za-z0-9']+", para)
+        if words:
+            queries.append(" ".join(words[:5]))
+    return queries
+
+
+def search_images_for_script(text: str, per_query: int = 1) -> List[dict]:
+    """Gather images for each paragraph of ``text``.
+
+    For every paragraph in the script one search query is created. Results
+    from Wikimedia Commons are combined with images from Unsplash if an access
+    key is configured. The total number of returned images is roughly
+    ``per_query`` times the number of paragraphs.
+    """
+    queries = extract_image_queries(text)
+    images: List[dict] = []
+    for q in queries:
+        images.extend(search_wikimedia_images(q, limit=per_query))
+        if len(images) < per_query * len(queries):
+            images.extend(search_unsplash_images(q, limit=per_query))
+    return images[: per_query * len(queries)]
+
 def tts_chunk(text: str, idx: int, basename: str) -> Path:
     """ Ein Block Text -> MP3 via ElevenLabs """
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}/stream"
